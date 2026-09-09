@@ -2,72 +2,81 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <time.h>
+#include <sys/socket.h>
 
-int main()
-{
+void send_all(int sock, void *buf, int len) {
+    int sent = 0;
+    while (sent < len) {
+        int n = send(sock, (char *)buf + sent, len - sent, 0);
+        if (n <= 0) { perror("send failed"); exit(1); }
+        sent += n;
+    }
+}
+
+void recv_all(int sock, void *buf, int len) {
+    int received = 0;
+    while (received < len) {
+        int n = recv(sock, (char *)buf + received, len - received, 0);
+        if (n <= 0) { perror("recv failed"); exit(1); }
+        received += n;
+    }
+}
+
+int main() {
     int client_socket;
     int n, i, j;
     int matrix[50][50];
     char type[50];
-    int choice;
+    char choice;
 
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in server_address;
-
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(8080);
     server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    connect(client_socket,
-            (struct sockaddr *)&server_address,
-            sizeof(server_address));
+    int ret = connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address));
+    if (ret < 0) {
+        perror("connect failed");
+        exit(1);
+    }
+    printf("Connected to server!\n");
 
-    srand(time(0));
-
-    while(1)
-    {
-        printf("\nEnter N (0 to exit): ");
+    do {
+        printf("\nOrder of the matrix: ");
         scanf("%d", &n);
+        send_all(client_socket, &n, sizeof(n));
 
-        send(client_socket, &n, sizeof(n), 0);
-
-        if(n == 0)
-            break;
-
-        for(i = 0; i < n; i++)
-        {
-            for(j = 0; j < n; j++)
-            {
-                matrix[i][j] = rand() % 50 + 1;
+        printf("\nEnter Matrix Elements:\n");
+        for (i = 0; i < n; i++) {
+            for (j = 0; j < n; j++) {
+                scanf("%d", &matrix[i][j]);
             }
         }
 
-        printf("\nGenerated Matrix:\n");
-
-        for(i = 0; i < n; i++)
-        {
-            for(j = 0; j < n; j++)
-            {
+        printf("\nEntered Matrix:\n");
+        for (i = 0; i < n; i++) {
+            for (j = 0; j < n; j++) {
                 printf("%d ", matrix[i][j]);
             }
             printf("\n");
         }
 
-        send(client_socket,
-             matrix,
-             sizeof(int) * n * n,
-             0);
+        for (i = 0; i < n; i++) {
+            send_all(client_socket, matrix[i], sizeof(int) * n);
+        }
 
-        recv(client_socket,
-             type,
-             sizeof(type),
-             0);
-
+        recv_all(client_socket, type, sizeof(type));
         printf("\nMatrix Type : %s\n", type);
-    }
 
+        printf("\nDo you want to continue? (y/n): ");
+        scanf(" %c", &choice);
+
+    } while (choice == 'y' || choice == 'Y');
+
+    n = 0;
+    send_all(client_socket, &n, sizeof(n));
     close(client_socket);
 
     return 0;
