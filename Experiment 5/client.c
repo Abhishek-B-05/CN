@@ -20,16 +20,16 @@ int main() {
     inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr);
 
     if (connect(sock, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
-        perror("connect failed");
+        perror("Connection failed");
         exit(1);
     }
 
-    printf("Connected to server. Type 'exit' to quit.\n");
+    printf("Connected to server successfully!\n");
 
     while (1) {
         printf("You: ");
         fgets(buffer, BUF_SIZE, stdin);
-        buffer[strcspn(buffer, "\n")] = 0;  // remove trailing newline
+        buffer[strcspn(buffer, "\n")] = 0;
 
         send(sock, buffer, strlen(buffer), 0);
 
@@ -38,7 +38,8 @@ int main() {
 
         memset(buffer, 0, BUF_SIZE);
         recv(sock, buffer, BUF_SIZE, 0);
-        printf("Server echoed: %s\n", buffer);
+
+        printf("Server: %s\n", buffer);
     }
 
     close(sock);
