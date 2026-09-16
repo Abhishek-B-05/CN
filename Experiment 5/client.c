@@ -2,14 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 #define PORT 8080
 #define BUF_SIZE 1024
 
+int sock;
+
+void *receive_handler(void *arg) {
+    char buffer[BUF_SIZE];
+    while (1) {
+        memset(buffer, 0, BUF_SIZE);
+        int n = recv(sock, buffer, BUF_SIZE - 1, 0);
+        if (n <= 0) {
+            printf("\nDisconnected from server.\n");
+            exit(0);
+        }
+        printf("\r%s\nYou: ", buffer);
+        fflush(stdout);
+    }
+    return NULL;
+}
+
 int main() {
-    int sock;
     struct sockaddr_in server_address;
     char buffer[BUF_SIZE];
 
@@ -26,8 +43,12 @@ int main() {
 
     printf("Connected to server successfully!\n");
 
+    pthread_t recv_thread;
+    pthread_create(&recv_thread, NULL, receive_handler, NULL);
+
     while (1) {
         printf("You: ");
+        fflush(stdout);
         fgets(buffer, BUF_SIZE, stdin);
         buffer[strcspn(buffer, "\n")] = 0;
 
@@ -35,11 +56,6 @@ int main() {
 
         if (strcmp(buffer, "exit") == 0)
             break;
-
-        memset(buffer, 0, BUF_SIZE);
-        recv(sock, buffer, BUF_SIZE, 0);
-
-        printf("Server: %s\n", buffer);
     }
 
     close(sock);
