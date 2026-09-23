@@ -43,7 +43,7 @@ int main() {
 
     // Continuous loop for multiple messages
     while (1) {
-        printf("Enter message: ");
+        printf("Enter command: ");
         if (fgets(message, BUFFER_SIZE, stdin) == NULL) break;
 
         message[strcspn(message, "\r\n")] = 0; // Strip trailing newline
