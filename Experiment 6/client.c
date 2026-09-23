@@ -7,10 +7,9 @@
 #include <sys/socket.h>
 
 #define PORT 8080
-#define SERVER_IP "127.0.0.1" // Replace with actual server IP for remote execution
+#define SERVER_IP "127.0.0.1"
 #define BUFFER_SIZE 1024
 
-// Utility function to convert string to uppercase for exit check
 void to_uppercase(char *str) {
     for (int i = 0; str[i]; i++) {
         str[i] = toupper((unsigned char)str[i]);
@@ -24,7 +23,6 @@ int main() {
     struct sockaddr_in server_addr;
     socklen_t addr_len = sizeof(server_addr);
 
-    // 1. Create UDP socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
@@ -35,20 +33,17 @@ int main() {
     server_addr.sin_port = htons(PORT);
     inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
 
-    // Set 2-second timeout so the client loop doesn't block indefinitely on ignored messages
     struct timeval tv = {2, 0};
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
     printf("Connected to server. Type 'TIME' for system time, or 'STOP' to exit.\n\n");
-
-    // Continuous loop for multiple messages
+    
     while (1) {
         printf("Enter command: ");
         if (fgets(message, BUFFER_SIZE, stdin) == NULL) break;
 
-        message[strcspn(message, "\r\n")] = 0; // Strip trailing newline
+        message[strcspn(message, "\r\n")] = 0;
 
-        // Check for exit condition ("stop")
         char check_stop[BUFFER_SIZE];
         strcpy(check_stop, message);
         to_uppercase(check_stop);
@@ -58,11 +53,9 @@ int main() {
             break;
         }
 
-        // Send input to the server
         sendto(sockfd, message, strlen(message), 0,
                (const struct sockaddr *)&server_addr, sizeof(server_addr));
 
-        // Try to receive a response
         memset(buffer, 0, BUFFER_SIZE);
         int bytes_received = recvfrom(sockfd, buffer, BUFFER_SIZE - 1, 0,
                                      (struct sockaddr *)&server_addr, &addr_len);
