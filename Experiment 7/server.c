@@ -41,9 +41,7 @@ int main() {
     printf("Server ready, waiting for client requests...\n");
 
     while (1) {
-        client_socket = accept(server_socket,
-                               (struct sockaddr *)&client_address,
-                               &client_len);
+        client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_len);
 
         if (client_socket < 0) {
             perror("Accept failed");
@@ -60,81 +58,51 @@ int main() {
 
         if (pid == 0) {
             close(server_socket);
-
             char filename[256];
             char response[BUF_SIZE];
-
             while (1) {
-
                 memset(filename, 0, sizeof(filename));
-
                 int bytes_received = recv(client_socket,
                                           filename,
                                           sizeof(filename) - 1,
                                           0);
-
                 if (bytes_received <= 0) {
                     printf("Client disconnected.\n");
                     break;
                 }
-
                 filename[bytes_received] = '\0';
-
                 printf("Client requested: %s\n", filename);
-
                 if (strcmp(filename, "quit") == 0) {
                     printf("Client requested to quit.\n");
                     break;
                 }
-
                 FILE *fp = fopen(filename, "r");
-
                 memset(response, 0, sizeof(response));
-
                 if (fp != NULL) {
-
                     char line[256];
                     char content[BUF_SIZE - 100];
-
                     memset(content, 0, sizeof(content));
-
                     while (fgets(line, sizeof(line), fp) != NULL) {
                         strcat(content, line);
                     }
-
-                    snprintf(response,
-                             sizeof(response),
-                             "Server PID: %d\n%s",
-                             getpid(),
-                             content);
-
+                    snprintf(response, sizeof(response),"Server PID: %d\n%s", getpid(),content);
                     fclose(fp);
-
                 } else {
-
-                    snprintf(response,
-                             sizeof(response),
-                             "Server PID: %d\nFile not found",
+                    snprintf(response,sizeof(response),"Server PID: %d\nFile not found",
                              getpid());
                 }
-
                 send(client_socket,
                      response,
                      strlen(response),
                      0);
             }
-
             close(client_socket);
             exit(0);
-
         } else {
             close(client_socket);
-
             waitpid(-1, NULL, WNOHANG);
         }
     }
-
     close(server_socket);
-
     return 0;
 }
