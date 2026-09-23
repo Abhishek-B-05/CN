@@ -16,26 +16,50 @@ int main() {
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
+    if (sock < 0) {
+        perror("Socket creation failed");
+        exit(1);
+    }
+
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(PORT);
     inet_pton(AF_INET, "127.0.0.1", &server_address.sin_addr);
 
-    if (connect(sock, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
+    if (connect(sock, (struct sockaddr *)&server_address,
+                sizeof(server_address)) < 0) {
         perror("Connection failed");
+        close(sock);
         exit(1);
     }
 
-    printf("Enter filename required: ");
-    fgets(filename, sizeof(filename), stdin);
-    filename[strcspn(filename, "\n")] = 0;
+    while (1) {
+        printf("\nEnter filename required (or 'quit' to exit): ");
 
-    send(sock, filename, strlen(filename), 0);
+        fgets(filename, sizeof(filename), stdin);
+        filename[strcspn(filename, "\n")] = '\0';
 
-    memset(response, 0, BUF_SIZE);
-    recv(sock, response, BUF_SIZE, 0);
+        if (strcmp(filename, "quit") == 0) {
+            printf("Closing connection...\n");
+            break;
+        }
 
-    printf("%s\n", response);
+        send(sock, filename, strlen(filename), 0);
+
+        memset(response, 0, BUF_SIZE);
+
+        int bytes_received = recv(sock, response, BUF_SIZE - 1, 0);
+
+        if (bytes_received <= 0) {
+            printf("Server disconnected.\n");
+            break;
+        }
+
+        response[bytes_received] = '\0';
+
+        printf("Server response: %s\n", response);
+    }
 
     close(sock);
+
     return 0;
 }
