@@ -78,7 +78,7 @@ int main() {
                 printf("[LOG] Sent time to %s:%d\n", 
                        inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             } else {
-                printf("[LOG] Ignored message ('%s') from %s:%d\n", 
+                printf("[LOG] Ignored command ('%s') from %s:%d\n", 
                        buffer, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             }
             
